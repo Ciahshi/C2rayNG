@@ -155,6 +155,10 @@ class MainActivity : HelperBaseComponentActivity() {
             MainDestination.CheckUpdate -> Intent(this, CheckUpdateActivity::class.java)
             MainDestination.BackupRestore -> Intent(this, BackupActivity::class.java)
             MainDestination.About -> Intent(this, AboutActivity::class.java)
+            MainDestination.CiaConfig -> {
+                Utils.openUri(this, "https://t.me/CiaConfig")
+                return
+            }
             MainDestination.Promotion -> {
                 Utils.openUri(
                     this,
