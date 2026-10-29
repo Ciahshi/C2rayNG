@@ -8,6 +8,7 @@ plugins {
 android {
     namespace = "com.v2ray.ang"
     compileSdk = 37
+    compileSdkMinor = 0
 
     defaultConfig {
         applicationId = "com.c2ray.ng"
