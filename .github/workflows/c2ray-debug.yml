@@ -1,0 +1,66 @@
+name: C2ray Android Debug APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/c2ray-rebrand
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-37 build-tools;37.0.0 platform-tools'
+
+      - name: Install NDK
+        run: |
+          yes | sdkmanager --install "ndk;30.0.16248370"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> "$GITHUB_ENV"
+          sed -i '10i\
+            ndkVersion = "30.0.16248370"' V2rayNG/app/build.gradle.kts
+
+      - name: Build HEV tunnel library
+        run: |
+          bash compile-hevtun.sh
+          cp -r libs V2rayNG/app
+
+      - name: Download matching Xray AAR
+        run: |
+          cd AndroidLibXrayLite
+          TAG=$(git describe --tags --abbrev=0)
+          cd ..
+          mkdir -p V2rayNG/app/libs
+          curl -fL "https://github.com/2dust/AndroidLibXrayLite/releases/download/$TAG/libv2ray.aar" -o V2rayNG/app/libs/libv2ray.aar
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Build debug APK
+        run: |
+          cd V2rayNG
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod +x gradlew
+          ./gradlew :app:assemblePlaystoreDebug
+
+      - name: Upload C2ray APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: C2ray-Android-debug
+          path: V2rayNG/app/build/outputs/apk/playstore/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
